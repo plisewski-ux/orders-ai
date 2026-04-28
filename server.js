@@ -4,6 +4,8 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
+const ENABLE_IMAGES = process.env.ENABLE_IMAGES === "true";
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -167,14 +169,17 @@ app.post("/chat", async (req, res) => {
       // 🎨 GENEROWANIE OBRAZU (opcjonalnie)
       let imageUrl = null;
 
-      try {
-        if (order.Items && order.Items.length > 0) {
-          const itemsText = order.Items
-            .slice(0, 3)
-            .map(i => i.name)
-            .join(", ");
+if (ENABLE_IMAGES) {
 
-          const imagePrompt = `
+  try {
+
+    if (order.Items && order.Items.length > 0) {
+
+      const itemsText = order.Items
+        .slice(0, 3)
+        .map(i => i.name)
+        .join(", ");
+       const imagePrompt = `
 Nowoczesne wnętrze w stylu ${order.Items[0].style}.
 
 Zawiera:
@@ -187,27 +192,23 @@ Dodatkowo:
 Styl: realistyczny, katalog wnętrzarski, miękkie światło, bez ludzi
 `;
 
-          const image = await openai.images.generate({
-            model: "gpt-image-1",
-            prompt: imagePrompt,
-            size: "1024x1024"
-          });
 
-          if (image.data[0].url) {
-            imageUrl = image.data[0].url;
-          } else if (image.data[0].b64_json) {
-            imageUrl = `data:image/png;base64,${image.data[0].b64_json}`;
-          }
-        }
-      } catch (imgErr) {
-        console.log("⚠️ image generation failed:", imgErr.message);
-      }
 
-      return res.json({
-        reply,
-        image: imageUrl
+      const image = await openai.images.generate({
+        model: "gpt-image-1",
+        prompt: imagePrompt,
+        size: "1024x1024"
       });
+      if (image.data[0].url) {
+        imageUrl = image.data[0].url;
+      } else if (image.data[0].b64_json) {
+        imageUrl = `data:image/png;base64,${image.data[0].b64_json}`;
+      }
     }
+  } catch (err) {
+    console.log("⚠️ image error:", err.message);
+  }
+}
 console.log("🖼️ IMAGE RAW:", image.data[0]);
 console.log("📤 sending image:", imageUrl ? "YES" : "NO");
 
