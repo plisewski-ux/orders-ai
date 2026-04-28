@@ -150,55 +150,48 @@ app.post("/chat", async (req, res) => {
         })
       };
 
-      // 🧠 FINAL TEXT
-      const final = await openai.responses.create({
-        model: "gpt-4.1",
-        input: [
-          ...messages,
-          output,
-          toolResponse
-        ]
-      });
+ // 🧠 FINAL TEXT
+const final = await openai.responses.create({
+  model: "gpt-4.1",
+  input: [
+    ...messages,
+    output,
+    toolResponse
+  ]
+});
 
-      const reply =
-        final.output?.[0]?.content?.[0]?.text ||
-        "Nie udało się wygenerować odpowiedzi.";
+const reply =
+  final.output?.[0]?.content?.[0]?.text ||
+  "Nie udało się wygenerować odpowiedzi.";
 
-      messages.push({ role: "assistant", content: reply });
+messages.push({ role: "assistant", content: reply });
 
-      // 🎨 GENEROWANIE OBRAZU (opcjonalnie)
-      let imageUrl = null;
+// 🎨 GENEROWANIE OBRAZU (opcjonalnie)
+let imageUrl = null;
 
 if (ENABLE_IMAGES) {
-
   try {
-
     if (order.Items && order.Items.length > 0) {
-
       const itemsText = order.Items
         .slice(0, 3)
         .map(i => i.name)
         .join(", ");
-       const imagePrompt = `
+
+      const imagePrompt = `
 Nowoczesne wnętrze w stylu ${order.Items[0].style}.
 
 Zawiera:
 ${itemsText}
 
-Dodatkowo:
-- dopasowane oświetlenie
-- dekoracje wnętrza
-
 Styl: realistyczny, katalog wnętrzarski, miękkie światło, bez ludzi
 `;
-
-
 
       const image = await openai.images.generate({
         model: "gpt-image-1",
         prompt: imagePrompt,
         size: "1024x1024"
       });
+
       if (image.data[0].url) {
         imageUrl = image.data[0].url;
       } else if (image.data[0].b64_json) {
@@ -209,8 +202,13 @@ Styl: realistyczny, katalog wnętrzarski, miękkie światło, bez ludzi
     console.log("⚠️ image error:", err.message);
   }
 }
-console.log("🖼️ IMAGE RAW:", image.data[0]);
+
 console.log("📤 sending image:", imageUrl ? "YES" : "NO");
+
+return res.json({
+  reply,
+  image: imageUrl
+});
 
     // 💬 fallback
     const reply =
