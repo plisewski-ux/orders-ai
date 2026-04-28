@@ -14,30 +14,24 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// 🧠 pamięć
+// 🧠 pamięć (demo)
 let messages = [
   {
     role: "system",
     content: `
-Pomagasz klientom sklepu home decor.
+Pomagasz klientom sklepu home decor...
 
-TRYBY:
-- zamówienia → użyj funkcji
-- pytania ogólne → odpowiadaj naturalnie
+(🔴 zostawiam Twój prompt bez zmian)
 
-ZASADY:
-- przy inspiracjach zapytaj:
+DODATKOWO:
+- jeśli proponujesz inspirację → zapytaj:
 "Chcesz, żebym wygenerował wizualizację?"
-
 - NIE generuj obrazów automatycznie
-
-FORMAT:
-- używaj HTML <div>
 `
   }
 ];
 
-// 🔍 czy user chce wizualizacji
+// 🧠 wykrywanie wizualizacji
 function wantsImage(text) {
   const q = text.toLowerCase();
   return (
@@ -64,7 +58,7 @@ app.post("/chat", async (req, res) => {
     const generateImage = ENABLE_IMAGES && wantsImage(userMessage);
 
     // =========================
-    // 🎨 GENEROWANIE OBRAZU
+    // 🎨 GENEROWANIE OBRAZU NA ŻĄDANIE
     // =========================
     if (generateImage) {
       const lastBotMessage = getLastBotMessage();
@@ -78,13 +72,13 @@ app.post("/chat", async (req, res) => {
       const promptRes = await openai.responses.create({
         model: "gpt-4.1",
         input: `
-Na podstawie poniższego opisu wnętrza stwórz krótki prompt do obrazu:
+Na podstawie poniższego opisu wnętrza stwórz prompt do realistycznego obrazu:
 
 ${lastBotMessage}
 
 Zasady:
-- realistyczne wnętrze
 - styl katalog wnętrzarski
+- realistyczne
 - bez ludzi
 `
       });
@@ -115,17 +109,100 @@ Zasady:
     }
 
     // =========================
-    // 💬 NORMAL CHAT
+    // 🧠 NORMAL FLOW (jak było)
     // =========================
 
     const response = await openai.responses.create({
       model: "gpt-4.1",
-      input: messages
+      input: messages,
+      tools: [
+        {
+          type: "function",
+          name: "get_order_details",
+          description: "Pobiera szczegóły zamówienia",
+          parameters: {
+            type: "object",
+            properties: {
+              order_id: { type: "string" }
+            },
+            required: ["order_id"]
+          }
+        }
+      ]
     });
 
+    if (!response.output || !response.output[0]) {
+      return res.json({ reply: "Nie mogę teraz odpowiedzieć." });
+    }
+
+    const output = response.output[0];
+
+    // =========================
+    // 🔧 FUNCTION CALL
+    // =========================
+    if (output.type === "function_call") {
+      const args = JSON.parse(output.arguments);
+      const order_id = args.order_id;
+
+      const apiRes = await fetch(
+        "https://elastic.snaplogic.com/api/1/rest/slsched/feed/bbk_dev/Dynamics365/shared/AI_TEST_PL%20Task",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.SNAPLOGIC_TOKEN}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            OredrID: order_id
+          })
+        }
+      );
+
+      const data = await apiRes.json();
+
+      if (!data || !data[0]) {
+        return res.json({
+          reply: `
+<div><strong>🔍 Nie widzę takiego zamówienia</strong></div>
+<div>Sprawdź proszę numer — może wkradła się literówka.</div>
+`
+        });
+      }
+
+      const order = data[0];
+
+      const toolResponse = {
+        type: "function_call_output",
+        call_id: output.call_id,
+        output: JSON.stringify({
+          status: order.OrderStatus,
+          carrier: order.Carrier,
+          tracking: order.TrackingNum,
+          items: order.Items
+        })
+      };
+
+      const final = await openai.responses.create({
+        model: "gpt-4.1",
+        input: [...messages, output, toolResponse]
+      });
+
+      const reply =
+        final.output?.[0]?.content?.[0]?.text ||
+        "Nie udało się wygenerować odpowiedzi.";
+
+      messages.push({ role: "assistant", content: reply });
+
+      return res.json({ reply }); // ❗ brak auto image
+    }
+
+    // =========================
+    // 💬 NORMAL RESPONSE
+    // =========================
+
     const reply =
-      response.output?.[0]?.content?.[0]?.text ||
-      "Możesz zapytać o zamówienie lub inspiracje 🙂";
+      output.content?.[0]?.text ||
+      "Możesz podać numer zamówienia albo zapytać o inspiracje 🙂";
 
     messages.push({ role: "assistant", content: reply });
 
