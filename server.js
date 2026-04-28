@@ -14,76 +14,45 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// 🧠 pamięć (demo)
+// 🧠 pamięć
 let messages = [
   {
     role: "system",
     content: `
-ZAKRES ASYSTENTA:
-
-Pomagasz tylko w:
-- statusie zamówienia
-- dostawie i zwrotach
-- produktach i inspiracjach do wnętrz
-
-Jeśli pytanie jest poza tym zakresem:
-- uprzejmie odmów
-- zaproponuj pomoc w zakresie sklepu
-
-Nie odpowiadaj na pytania niezwiązane ze sklepem (np. przepisy kulinarne, sport, polityka).
-
-ZASADY:
-- odpowiadaj naturalnie i przyjaźnie
-- unikaj technicznego języka
-
-REGULAMIN:
-
-ZWROTY:
-- 60 dni na zwrot bez podania przyczyny
-
-DOSTAWA:
-- 2–5 dni roboczych
-
-REKLAMACJE:
-- do 2 lat on zakupu.
-- formularz reklamacyjny: reklamacje.ten-sklep.pl
-- czas na rozpatrzenie reklamacji 14 dni
-
-ZASADY:
-
-- odpowiadaj na pytania klientów zgodnie z regulaminem
-- jeśli nie masz informacji → powiedz to wprost
-- odpowiadaj krótko i konkretnie
+Pomagasz klientom sklepu home decor.
 
 TRYBY:
-- jeśli użytkownik podaje numer zamówienia → użyj funkcji
-- jeśli pyta ogólnie → odpowiedz normalnie (bez funkcji)
-
-FORMAT ODPOWIEDZI:
-
-1. Jeśli masz dane zamówienia (status, tracking):
-→ użyj struktury:
-
-<div><strong>📦 Status zamówienia</strong></div>
-<div>...</div>
-
-<div><strong>🚚 Dostawa</strong></div>
-<div>...</div>
-
-<div><strong>💡 Inspiracja</strong></div>
-<div>...</div>
-
-2. Jeśli NIE masz danych zamówienia (pytanie ogólne, inspiracje):
-→ NIE używaj powyższej struktury
-→ odpowiedz naturalnie w 1–2 krótkich akapitach
-→ możesz zaproponować produkty lub styl
+- zamówienia → użyj funkcji
+- pytania ogólne → odpowiadaj naturalnie
 
 ZASADY:
-- nie wymyślaj brakujących danych (np. przewoźnika)
-- nie pokazuj pustych sekcji
+- przy inspiracjach zapytaj:
+"Chcesz, żebym wygenerował wizualizację?"
+
+- NIE generuj obrazów automatycznie
+
+FORMAT:
+- używaj HTML <div>
 `
   }
 ];
+
+// 🔍 czy user chce wizualizacji
+function wantsImage(text) {
+  const q = text.toLowerCase();
+  return (
+    q.includes("wizualiz") ||
+    q.includes("pokaż") ||
+    q.includes("pokaz") ||
+    q.includes("zdjęcie") ||
+    q.includes("zdjecie")
+  );
+}
+
+// 🧠 ostatnia odpowiedź bota
+function getLastBotMessage() {
+  return [...messages].reverse().find(m => m.role === "assistant")?.content;
+}
 
 app.post("/chat", async (req, res) => {
   try {
@@ -92,135 +61,71 @@ app.post("/chat", async (req, res) => {
 
     messages.push({ role: "user", content: userMessage });
 
-    const response = await openai.responses.create({
-      model: "gpt-4.1",
-      input: messages,
-      tools: [
-        {
-          type: "function",
-          name: "get_order_details",
-          description: "Pobiera szczegóły zamówienia",
-          parameters: {
-            type: "object",
-            properties: {
-              order_id: { type: "string" }
-            },
-            required: ["order_id"]
-          }
-        }
-      ]
-    });
-
-    if (!response.output || !response.output[0]) {
-      return res.json({ reply: "Nie mogę teraz odpowiedzieć." });
-    }
-
-    const output = response.output[0];
+    const generateImage = ENABLE_IMAGES && wantsImage(userMessage);
 
     // =========================
-    // 🔧 FUNCTION CALL
+    // 🎨 GENEROWANIE OBRAZU
     // =========================
-    if (output.type === "function_call") {
-      const args = JSON.parse(output.arguments);
-      const order_id = args.order_id;
+    if (generateImage) {
+      const lastBotMessage = getLastBotMessage();
 
-      console.log("🔧 FUNCTION CALL:", order_id);
-
-      const apiRes = await fetch(
-        "https://elastic.snaplogic.com/api/1/rest/slsched/feed/bbk_dev/Dynamics365/shared/AI_TEST_PL%20Task",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.SNAPLOGIC_TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            OredrID: order_id
-          })
-        }
-      );
-
-      const data = await apiRes.json();
-
-      if (!data || !data[0]) {
+      if (!lastBotMessage) {
         return res.json({
-          reply: `
-<div><strong>🔍 Nie widzę takiego zamówienia</strong></div>
-<div>Sprawdź proszę numer — może wkradła się literówka.</div>
-
-<div><strong>💡 Wskazówka</strong></div>
-<div>Możesz też zapytać o inspiracje do wnętrza 🙂</div>
-`
+          reply: "Najpierw opisz proszę, czego szukasz 🙂"
         });
       }
 
-      const order = data[0];
-
-      const toolResponse = {
-        type: "function_call_output",
-        call_id: output.call_id,
-        output: JSON.stringify({
-          status: order.OrderStatus,
-          carrier: order.Carrier,
-          tracking: order.TrackingNum,
-          items: order.Items
-        })
-      };
-
-      const final = await openai.responses.create({
+      const promptRes = await openai.responses.create({
         model: "gpt-4.1",
-        input: [...messages, output, toolResponse]
+        input: `
+Na podstawie poniższego opisu wnętrza stwórz krótki prompt do obrazu:
+
+${lastBotMessage}
+
+Zasady:
+- realistyczne wnętrze
+- styl katalog wnętrzarski
+- bez ludzi
+`
       });
 
-      const reply =
-        final.output?.[0]?.content?.[0]?.text ||
-        "Nie udało się wygenerować odpowiedzi.";
+      const imagePrompt = promptRes.output_text;
 
-      messages.push({ role: "assistant", content: reply });
+      const image = await openai.images.generate({
+        model: "gpt-image-1",
+        prompt: imagePrompt,
+        size: "1024x1024"
+      });
 
-      // 🎨 IMAGE (opcjonalnie)
       let imageUrl = null;
 
-      if (ENABLE_IMAGES && order.Items?.length > 0) {
-        try {
-          const itemsText = order.Items
-            .slice(0, 3)
-            .map(i => i.name)
-            .join(", ");
-
-          const image = await openai.images.generate({
-            model: "gpt-image-1",
-            prompt: `
-Wnętrze w stylu ${order.Items[0].style}
-Zawiera: ${itemsText}
-Styl: katalog wnętrzarski, realistyczne, bez ludzi
-`,
-            size: "1024x1024"
-          });
-
-          if (image.data[0].url) {
-            imageUrl = image.data[0].url;
-          } else if (image.data[0].b64_json) {
-            imageUrl = `data:image/png;base64,${image.data[0].b64_json}`;
-          }
-        } catch (err) {
-          console.log("⚠️ image error:", err.message);
-        }
+      if (image.data[0].url) {
+        imageUrl = image.data[0].url;
+      } else if (image.data[0].b64_json) {
+        imageUrl = `data:image/png;base64,${image.data[0].b64_json}`;
       }
 
       return res.json({
-        reply,
+        reply: `
+<div><strong>🎨 Wizualizacja</strong></div>
+<div>Tak może wyglądać Twoja aranżacja:</div>
+`,
         image: imageUrl
       });
     }
 
     // =========================
-    // 💬 NORMAL RESPONSE (bez toola)
+    // 💬 NORMAL CHAT
     // =========================
 
+    const response = await openai.responses.create({
+      model: "gpt-4.1",
+      input: messages
+    });
+
     const reply =
-      output.content?.[0]?.text ||
-      "Możesz podać numer zamówienia albo zapytać o inspiracje 🙂";
+      response.output?.[0]?.content?.[0]?.text ||
+      "Możesz zapytać o zamówienie lub inspiracje 🙂";
 
     messages.push({ role: "assistant", content: reply });
 
