@@ -29,18 +29,28 @@ TRYBY:
 - jeśli użytkownik podaje numer zamówienia → użyj funkcji
 - jeśli pyta ogólnie → odpowiedz normalnie (bez funkcji)
 
-FORMAT (OBOWIĄZKOWY):
-Zawsze używaj HTML <div>
+FORMAT ODPOWIEDZI:
+
+1. Jeśli masz dane zamówienia (status, tracking):
+→ użyj struktury:
 
 <div><strong>📦 Status zamówienia</strong></div>
-<div>[1-2 zdania]</div>
+<div>...</div>
 
 <div><strong>🚚 Dostawa</strong></div>
-<div>Przewoźnik: ...</div>
-<div>Numer śledzenia: ...</div>
+<div>...</div>
 
 <div><strong>💡 Inspiracja</strong></div>
-<div>[1-2 zdania]</div>
+<div>...</div>
+
+2. Jeśli NIE masz danych zamówienia (pytanie ogólne, inspiracje):
+→ NIE używaj powyższej struktury
+→ odpowiedz naturalnie w 1–2 krótkich akapitach
+→ możesz zaproponować produkty lub styl
+
+ZASADY:
+- nie wymyślaj brakujących danych (np. przewoźnika)
+- nie pokazuj pustych sekcji
 `
   }
 ];
