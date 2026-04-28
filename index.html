@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Asystent zamówień</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .chat-container {
+      width: 780px;
+      height: 900px;
+      background: white;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 🔥 logo w tle */
+    .chat-container::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url('logo.png') center center no-repeat;
+      background-size: 220px;
+      opacity: 0.06;
+      filter: blur(6px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* 🔥 delikatne wybielenie */
+    .chat-container::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.85);
+      z-index: 0;
+    }
+
+    .header {
+      background: #111;
+      color: white;
+      padding: 16px;
+      font-weight: bold;
+      position: relative;
+      z-index: 1;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 16px;
+      max-width: 75%;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #007bff;
+      color: white;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background: #eee;
+    }
+
+    .bot strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .input-area {
+      display: flex;
+      border-top: 1px solid #ddd;
+      position: relative;
+      z-index: 1;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+    }
+
+    button {
+      background: #111;
+      color: white;
+      border: none;
+      padding: 0 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #333;
+    }
+
+    .typing {
+      font-style: italic;
+      font-size: 12px;
+      color: #888;
+    }
+
+    img.chat-image {
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="chat-container">
+  <div class="header">🛍️ Asystent zamówień</div>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="input-area">
+    <input id="input" placeholder="Np. HY12345604" />
+    <button onclick="send()">➤</button>
+  </div>
+</div>
+
+<script>
+  const messagesDiv = document.getElementById("messages");
+
+  // 👋 welcome message
+  addMessage("Cześć! Podaj numer zamówienia, a sprawdzę jego status 🙂", "bot");
+
+  function addMessage(text, type, imageUrl) {
+    const div = document.createElement("div");
+    div.className = "bubble " + type;
+
+    div.innerHTML = text;
+
+    if (imageUrl) {
+      const img = document.createElement("img");
+      img.src = imageUrl;
+      img.className = "chat-image";
+      div.appendChild(img);
+    }
+
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  function showTyping() {
+    const div = document.createElement("div");
+    div.className = "typing";
+    div.id = "typing";
+    div.innerText = "Bot pisze...";
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById("typing");
+    if (t) t.remove();
+  }
+
+  async function send() {
+    const input = document.getElementById("input");
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    addMessage(text, "user");
+    input.value = "";
+
+    showTyping();
+
+    try {
+      const res = await fetch("http://localhost:3000/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: text })
+      });
+
+      const data = await res.json();
+
+      removeTyping();
+      addMessage(data.reply, "bot", data.image);
+
+    } catch (err) {
+      removeTyping();
+      addMessage("Błąd połączenia z serwerem", "bot");
+    }
+  }
+
+  // ⌨️ Enter = send
+  document.getElementById("input").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") send();
+  });
+</script>
+
+</body>
+</html>
