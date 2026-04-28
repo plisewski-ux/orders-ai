@@ -1,3 +1,92 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Asystent zamówień</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .chat {
+      width: 400px;
+      height: 600px;
+      background: white;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .bubble {
+      padding: 10px;
+      border-radius: 12px;
+      max-width: 75%;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #007bff;
+      color: white;
+    }
+
+    .bot {
+      background: #eee;
+    }
+
+    .input {
+      display: flex;
+      border-top: 1px solid #ddd;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      outline: none;
+    }
+
+    button {
+      padding: 10px;
+      border: none;
+      background: black;
+      color: white;
+    }
+
+    img {
+      width: 100%;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="chat">
+  <div class="messages" id="messages"></div>
+
+  <div class="input">
+    <input id="input" placeholder="Napisz coś..." />
+    <button onclick="send()">➤</button>
+  </div>
+</div>
+
 <script>
 const messagesDiv = document.getElementById("messages");
 
@@ -6,15 +95,12 @@ function addMessage(text, type) {
   div.className = "bubble " + type;
   div.innerHTML = text;
   messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
 function addImage(url) {
   const img = document.createElement("img");
   img.src = url;
-  img.style.width = "100%";
-  img.style.borderRadius = "12px";
-  img.style.marginTop = "8px";
-
   messagesDiv.appendChild(img);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
@@ -22,23 +108,34 @@ function addImage(url) {
 async function send() {
   const input = document.getElementById("input");
   const text = input.value.trim();
+
   if (!text) return;
 
   addMessage(text, "user");
   input.value = "";
 
-  const res = await fetch("/chat", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ message: text })
-  });
+  try {
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: text })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  addMessage(data.reply, "bot");
+    addMessage(data.reply, "bot");
 
-  if (data.image) {
-    addImage(data.image);
+    if (data.image) {
+      addImage(data.image);
+    }
+
+  } catch (e) {
+    addMessage("Błąd połączenia z serwerem", "bot");
   }
 }
 </script>
+
+</body>
+</html>
