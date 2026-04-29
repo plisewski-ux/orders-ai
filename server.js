@@ -322,16 +322,19 @@ ZASADY:
         ]
       });
 
-      const reply =
-        final.output?.[0]?.content?.[0]?.text ||
-        "Nie udało się wygenerować odpowiedzi.";
+      let reply =
+  final.output?.[0]?.content?.[0]?.text ||
+  "Nie udało się wygenerować odpowiedzi.";
 
-      messages.push({ role: "assistant", content: reply });
+// 🔥 TU DODAJEMY CTA
+reply = ensureVisualizationCTA(reply);
 
-      return res.json({
-        reply,
-        products: suggestions
-      });
+messages.push({ role: "assistant", content: reply });
+
+return res.json({
+  reply,
+  products: suggestions
+});
     }
 
     // =========================
