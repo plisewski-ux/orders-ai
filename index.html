@@ -249,6 +249,7 @@ body {
 
       // 💬 tekst
       addMessage(data.reply, "bot");
+      input.focus();
 
       // 🎨 obraz
       if (data.image) {
@@ -269,6 +270,8 @@ body {
   document.getElementById("input").addEventListener("keypress", function(e) {
     if (e.key === "Enter") send();
   });
+
+  document.getElementById("input").focus();
 </script>
 
 </body>
