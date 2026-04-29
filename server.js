@@ -84,6 +84,21 @@ TRYBY DZIAŁANIA
 → odpowiedz normalnie (bez funkcji)
 
 --------------------------------
+ZASADY ARANŻACJI:
+--------------------------------
+
+- produkty muszą być umieszczone w logicznych miejscach
+- nie łącz produktów w sposób nielogiczny (np. wazon na sofie)
+- wazon → stół, komoda, półka
+- poduszka → sofa, fotel, łóżko
+- kubek / miska → stół, blat, półka
+- dekoracje → półka, komoda, ściana
+
+- jeśli produkty są z różnych kategorii:
+  → opisz je jako osobne elementy aranżacji
+  → NIE mieszaj ich w jednym miejscu
+
+--------------------------------
 FORMAT ODPOWIEDZI
 --------------------------------
 
