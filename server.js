@@ -329,6 +329,15 @@ Dostępne produkty do inspiracji:
 ${productContext}
 
 ZASADY:
+- wybierz MAKSYMALNIE 1 produkt z powyższej listy
+- MUSISZ wspomnieć dokładnie ten produkt w sekcji "💡 Inspiracja"
+- NIE wymyślaj innych produktów
+- NIE używaj produktów spoza listy
+- opis inspiracji musi być spójny z tym produktem
+- jeśli produkt to:
+  - kubek / miska → użyj w kuchni lub na stole
+  - krzesło → przy stole
+  - dekoracja → komoda / półka
 - używaj tylko tych produktów
 - jeśli proponujesz produkt → dodaj:
 <div data-product-id="ID"></div>
