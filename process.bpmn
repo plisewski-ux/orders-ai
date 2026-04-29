@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  id="Definitions_1"
+  targetNamespace="http://bpmn.io/schema/bpmn">
+
+  <bpmn:process id="chat_process" isExecutable="true">
+
+    <bpmn:startEvent id="StartEvent_1" name="Start"/>
+    <bpmn:serviceTask id="Task_Analyze" name="Analiza AI"/>
+    <bpmn:exclusiveGateway id="Gateway_1" name="Zamówienie?"/>
+    <bpmn:serviceTask id="Task_Order" name="Pobierz zamówienie"/>
+    <bpmn:serviceTask id="Task_Response" name="Odpowiedź"/>
+    <bpmn:endEvent id="EndEvent_1" name="Koniec"/>
+
+    <bpmn:sequenceFlow id="f1" sourceRef="StartEvent_1" targetRef="Task_Analyze"/>
+    <bpmn:sequenceFlow id="f2" sourceRef="Task_Analyze" targetRef="Gateway_1"/>
+    <bpmn:sequenceFlow id="f3" sourceRef="Gateway_1" targetRef="Task_Order"/>
+    <bpmn:sequenceFlow id="f4" sourceRef="Task_Order" targetRef="Task_Response"/>
+    <bpmn:sequenceFlow id="f5" sourceRef="Task_Response" targetRef="EndEvent_1"/>
+
+  </bpmn:process>
+
+  <!-- 🔥 DIAGRAM (TO BYŁO BRAKUJĄCE) -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="chat_process">
+
+      <bpmndi:BPMNShape id="Start_shape" bpmnElement="StartEvent_1">
+        <dc:Bounds x="100" y="200" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Analyze_shape" bpmnElement="Task_Analyze">
+        <dc:Bounds x="200" y="180" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Gateway_shape" bpmnElement="Gateway_1">
+        <dc:Bounds x="350" y="195" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Order_shape" bpmnElement="Task_Order">
+        <dc:Bounds x="450" y="180" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Response_shape" bpmnElement="Task_Response">
+        <dc:Bounds x="600" y="180" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="End_shape" bpmnElement="EndEvent_1">
+        <dc:Bounds x="750" y="200" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <!-- EDGES -->
+      <bpmndi:BPMNEdge id="e1" bpmnElement="f1">
+        <di:waypoint x="136" y="218"/>
+        <di:waypoint x="200" y="218"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="e2" bpmnElement="f2">
+        <di:waypoint x="320" y="218"/>
+        <di:waypoint x="350" y="218"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="e3" bpmnElement="f3">
+        <di:waypoint x="400" y="218"/>
+        <di:waypoint x="450" y="218"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="e4" bpmnElement="f4">
+        <di:waypoint x="570" y="218"/>
+        <di:waypoint x="600" y="218"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="e5" bpmnElement="f5">
+        <di:waypoint x="720" y="218"/>
+        <di:waypoint x="750" y="218"/>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

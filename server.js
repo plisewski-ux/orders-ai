@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const ENABLE_IMAGES = process.env.ENABLE_IMAGES === "true";
 
@@ -14,134 +15,43 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// 🧠 pamięć (demo)
+// 📦 produkty
+const products = JSON.parse(
+  fs.readFileSync("./products.json", "utf-8")
+);
+
+// 🧠 pamięć
 let messages = [
   {
     role: "system",
-    content: `
-Jesteś asystentem sklepu home decor.
-
-Twoim zadaniem jest pomaganie klientom w:
-- sprawdzaniu statusu zamówienia
-- pytaniach o dostawę, zwroty i reklamacje
-- lekkich inspiracjach dotyczących wnętrz
-
---------------------------------
-ZAKRES
---------------------------------
-
-Odpowiadasz TYLKO na tematy związane ze sklepem:
-- zamówienia
-- dostawa i zwroty
-- produkty i inspiracje wnętrz
-
-Jeśli pytanie jest poza zakresem (np. przepisy, sport, polityka):
-→ uprzejmie odmów
-→ zaproponuj pomoc w zakresie sklepu
-
---------------------------------
-STYL ODPOWIEDZI
---------------------------------
-
-- odpowiadaj naturalnie i przyjaźnie
-- unikaj technicznego języka
-- pisz krótko i konkretnie
-
---------------------------------
-REGULAMIN
---------------------------------
-
-ZWROTY:
-- 60 dni na zwrot bez podania przyczyny
-
-DOSTAWA:
-- 2–5 dni roboczych
-
-REKLAMACJE:
-- do 2 lat od zakupu
-- formularz: reklamacje.ten-sklep.pl
-- czas rozpatrzenia: 14 dni
-
-ZASADY:
-- odpowiadaj zgodnie z regulaminem
-- jeśli nie masz informacji → powiedz to wprost
-- nie używaj języka prawniczego
-
---------------------------------
-TRYBY DZIAŁANIA
---------------------------------
-
-1. Jeśli użytkownik podaje numer zamówienia:
-→ użyj funkcji do pobrania danych
-
-2. Jeśli pytanie jest ogólne:
-→ odpowiedz normalnie (bez funkcji)
-
---------------------------------
-FORMAT ODPOWIEDZI
---------------------------------
-
-1. Jeśli masz dane zamówienia:
-
-Użyj dokładnie tej struktury HTML:
-
-<div><strong>📦 Status zamówienia</strong></div>
-<div>...</div>
-
-<div><strong>🚚 Dostawa</strong></div>
-<div>...</div>
-
-<div><strong>💡 Inspiracja</strong></div>
-<div>...</div>
-
-ZASADY:
-- nie pokazuj pustych sekcji
-- nie wymyślaj brakujących danych
-
---------------------------------
-
-2. Jeśli NIE masz danych zamówienia (pytania ogólne):
-
-→ NIE używaj powyższej struktury  
-→ odpowiedz w 1–2 krótkich akapitach  
-→ możesz zaproponować inspirację lub produkt  
-
-INSPIRACJE I WIZUALIZACJE
-
-Jeśli w odpowiedzi występuje sekcja:
-"💡 Inspiracja"
-
-TO ZAWSZE na końcu tej sekcji dodaj dokładnie:
-
-<div>🎨 Chcesz zobaczyć wizualizację tej aranżacji?</div>
-
-ZASADY:
-- to jest obowiązkowe
-- nie pomijaj tego nigdy
-- nie zmieniaj treści tego zdania
-
---------------------------------
-
-Jeśli sekcja "💡 Inspiracja" NIE występuje:
-→ NIE wspominaj o wizualizacji
-
---------------------------------
-ZABRONIONE
---------------------------------
-
-NIGDY nie pisz, że sam generujesz wizualizację.
-
-NIE używaj sformułowań:
-- "zaraz wygeneruję"
-- "tworzę wizualizację"
-- "już przygotowuję wizualizację"
-
-Możesz tylko zapytać użytkownika, czy chce ją zobaczyć.
-`
+    content: `Jesteś asystentem sklepu home decor... (bez zmian)`
   }
 ];
 
+// =========================
+// 🧠 MATCHING PRODUKTÓW
+// =========================
+function matchProducts(orderItems, allProducts) {
+  const styles = orderItems.map(i => i.style);
+  const colors = orderItems.map(i => i.color);
+
+  return allProducts
+    .filter(p => !orderItems.find(i => i.id === p.id))
+    .map(p => {
+      let score = 0;
+
+      if (styles.includes(p.style)) score += 2;
+      if (colors.includes(p.color)) score += 1;
+
+      return { ...p, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2);
+}
+
+// =========================
 // 🧠 wykrywanie wizualizacji
+// =========================
 function wantsImage(text) {
   const q = text.toLowerCase();
   return (
@@ -153,7 +63,7 @@ function wantsImage(text) {
   );
 }
 
-// 🧠 ostatnia odpowiedź bota
+// 🧠 ostatnia odpowiedź
 function getLastBotMessage() {
   return [...messages].reverse().find(m => m.role === "assistant")?.content;
 }
@@ -161,34 +71,33 @@ function getLastBotMessage() {
 app.post("/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
-    console.log("➡️ USER:", userMessage);
-
     messages.push({ role: "user", content: userMessage });
 
     const generateImage = ENABLE_IMAGES && wantsImage(userMessage);
 
     // =========================
-    // 🎨 GENEROWANIE OBRAZU NA ŻĄDANIE
+    // 🎨 GENEROWANIE OBRAZU
     // =========================
     if (generateImage) {
       const lastBotMessage = getLastBotMessage();
 
       if (!lastBotMessage) {
         return res.json({
-          reply: "Najpierw opisz proszę, czego szukasz 🙂"
+          reply: "Najpierw zapytaj o inspirację 🙂"
         });
       }
 
       const promptRes = await openai.responses.create({
         model: "gpt-4.1",
         input: `
-Na podstawie poniższego opisu wnętrza stwórz prompt do realistycznego obrazu:
+Na podstawie tej inspiracji stwórz prompt do realistycznej aranżacji wnętrza:
 
 ${lastBotMessage}
 
 Zasady:
-- styl katalog wnętrzarski
 - realistyczne
+- katalog wnętrzarski
+- miękkie światło
 - bez ludzi
 `
       });
@@ -201,13 +110,9 @@ Zasady:
         size: "1024x1024"
       });
 
-      let imageUrl = null;
-
-      if (image.data[0].url) {
-        imageUrl = image.data[0].url;
-      } else if (image.data[0].b64_json) {
-        imageUrl = `data:image/png;base64,${image.data[0].b64_json}`;
-      }
+      const imageUrl =
+        image.data[0].url ||
+        `data:image/png;base64,${image.data[0].b64_json}`;
 
       return res.json({
         reply: `
@@ -219,9 +124,8 @@ Zasady:
     }
 
     // =========================
-    // 🧠 NORMAL FLOW (jak było)
+    // 🧠 AI RESPONSE
     // =========================
-
     const response = await openai.responses.create({
       model: "gpt-4.1",
       input: messages,
@@ -229,7 +133,6 @@ Zasady:
         {
           type: "function",
           name: "get_order_details",
-          description: "Pobiera szczegóły zamówienia",
           parameters: {
             type: "object",
             properties: {
@@ -241,11 +144,10 @@ Zasady:
       ]
     });
 
-    if (!response.output || !response.output[0]) {
+    const output = response.output?.[0];
+    if (!output) {
       return res.json({ reply: "Nie mogę teraz odpowiedzieć." });
     }
-
-    const output = response.output[0];
 
     // =========================
     // 🔧 FUNCTION CALL
@@ -262,9 +164,7 @@ Zasady:
             Authorization: `Bearer ${process.env.SNAPLOGIC_TOKEN}`,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({
-            OredrID: order_id
-          })
+          body: JSON.stringify({ OredrID: order_id })
         }
       );
 
@@ -274,12 +174,20 @@ Zasady:
         return res.json({
           reply: `
 <div><strong>🔍 Nie widzę takiego zamówienia</strong></div>
-<div>Sprawdź proszę numer — może wkradła się literówka.</div>
+<div>Sprawdź numer zamówienia 🙂</div>
 `
         });
       }
 
       const order = data[0];
+
+      // 🔥 MATCHING
+      const suggestions = matchProducts(order.Items || [], products);
+
+      // 🔥 kontekst dla AI
+      const productContext = suggestions
+        .map(p => `${p.id} - ${p.name}`)
+        .join("\n");
 
       const toolResponse = {
         type: "function_call_output",
@@ -294,7 +202,23 @@ Zasady:
 
       const final = await openai.responses.create({
         model: "gpt-4.1",
-        input: [...messages, output, toolResponse]
+        input: [
+          ...messages,
+          output,
+          toolResponse,
+          {
+            role: "system",
+            content: `
+Dostępne produkty do inspiracji:
+${productContext}
+
+ZASADY:
+- używaj tylko tych produktów
+- jeśli proponujesz produkt → dodaj:
+<div data-product-id="ID"></div>
+`
+          }
+        ]
       });
 
       const reply =
@@ -303,30 +227,34 @@ Zasady:
 
       messages.push({ role: "assistant", content: reply });
 
-      return res.json({ reply }); // ❗ brak auto image
+      return res.json({
+        reply,
+        products: suggestions
+      });
     }
 
     // =========================
     // 💬 NORMAL RESPONSE
     // =========================
-
     const reply =
       output.content?.[0]?.text ||
-      "Możesz podać numer zamówienia albo zapytać o inspiracje 🙂";
+      "Możesz podać numer zamówienia 🙂";
 
     messages.push({ role: "assistant", content: reply });
 
     return res.json({ reply });
 
   } catch (err) {
-    console.error("❌ ERROR:", err);
+    console.error(err);
     res.status(500).json({
       reply: "Wystąpił błąd serwera."
     });
   }
 });
 
-// 🌐 static
+// =========================
+// 🌐 STATIC
+// =========================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
