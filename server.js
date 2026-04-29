@@ -154,6 +154,20 @@ function wantsImage(text) {
 function getLastBotMessage() {
   return [...messages].reverse().find(m => m.role === "assistant")?.content;
 }
+function ensureVisualizationCTA(reply) {
+  const hasInspiration = reply.includes("💡 Inspiracja");
+  const hasCTA = reply.includes("🎨");
+
+  if (hasInspiration && !hasCTA) {
+    return reply + `
+<div>🎨 Chcesz zobaczyć wizualizację tej aranżacji?</div>
+`;
+  }
+
+  return reply;
+}
+
+
 
 app.post("/chat", async (req, res) => {
   try {
