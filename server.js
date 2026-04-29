@@ -133,7 +133,7 @@ function matchProducts(orderItems, allProducts) {
       return { ...p, score };
     })
     .sort((a, b) => b.score - a.score)
-    .slice(0, 2);
+    .slice(0, 1);
 }
 
 // =========================
