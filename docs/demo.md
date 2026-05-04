@@ -88,6 +88,8 @@ HY12345005  ✅ standard + inspiracja
 HY12345001  ❌ anulowane
 HY00000000  🔍 brak zamówienia
 
+W API bot ma zdefiniowane zamówienia od: HY12345001 - HY12345020 i na tych 20 zamówieniach mona spokojnie testowac.
+
 🧠 Co demonstruje system
 
 ✔ AI + API
