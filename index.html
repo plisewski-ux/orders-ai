@@ -137,7 +137,7 @@ body {
     }
 
     img.chat-image {
-      width: 80%;
+      width: 100%;
       border-radius: 12px;
       margin-top: 8px;
       box-shadow: 0 5px 20px rgba(0,0,0,0.1);
@@ -181,6 +181,15 @@ body {
     div.className = "bubble " + type;
     div.innerHTML = text;
 
+    // 🔥 jeśli jest CTA → dodaj button
+    if (text.includes("🎨")) {
+    const btn = document.createElement("button");
+    btn.innerText = "🎨 Pokaż wizualizację";
+    btn.style.marginTop = "10px";
+    btn.onclick = () => send("__SHOW_VISUALIZATION__");
+    div.appendChild(btn);
+    }
+
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
@@ -223,49 +232,50 @@ body {
     if (t) t.remove();
   }
 
-  async function send() {
-    const input = document.getElementById("input");
-    const text = input.value.trim();
+  async function send(customText = null) {
+  const input = document.getElementById("input");
 
-    if (!text) return;
+  const text = customText || input.value.trim();
 
+  if (!text) return;
+
+  // ❗ nie pokazuj technicznego triggera w UI
+  if (!customText) {
     addMessage(text, "user");
     input.value = "";
-
-    showTyping();
-
-    try {
-      const res = await fetch("/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ message: text })
-      });
-
-      const data = await res.json();
-
-      removeTyping();
-
-      // 💬 tekst
-      addMessage(data.reply, "bot");
-      input.focus();
-
-      // 🎨 obraz
-      if (data.image) {
-        addImage(data.image);
-      }
-
-      // 🛒 produkty
-      if (data.products && data.products.length > 0) {
-        data.products.forEach(p => addProductCard(p));
-      }
-
-    } catch (err) {
-      removeTyping();
-      addMessage("Błąd połączenia z serwerem", "bot");
-    }
   }
+
+  showTyping();
+
+  try {
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: text })
+    });
+
+    const data = await res.json();
+
+    removeTyping();
+
+    addMessage(data.reply, "bot");
+    input.focus();
+
+    if (data.image) {
+      addImage(data.image);
+    }
+
+    if (data.products && data.products.length > 0) {
+      data.products.forEach(p => addProductCard(p));
+    }
+
+  } catch (err) {
+    removeTyping();
+    addMessage("Błąd połączenia z serwerem", "bot");
+  }
+}
 
   document.getElementById("input").addEventListener("keypress", function(e) {
     if (e.key === "Enter") send();

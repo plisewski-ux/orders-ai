@@ -1,0 +1,57 @@
+[
+{
+  "id": "refund_logic_full",
+  "keywords": ["zwrot pieniędzy", "jak dostanę zwrot","zwrot"],
+  "content": "Zwrot możliwy jest do 60 dni. Jeśli zgłosisz zwrot w ciągu 14 dni, pieniądze wrócą tą samą metodą płatności. Po 14 dniach zwrot realizowany jest w formie karty podarunkowej."
+ },
+  {
+    "id": "delivery",
+    "keywords": ["dostawa", "wysyłka", "kurier", "ile idzie"],
+    "content": "Dostawa trwa 2–5 dni roboczych."
+  },
+  {
+    "id": "complaints",
+    "keywords": ["reklamacja", "uszkodzony", "wadliwy"],
+    "content": "Reklamacje można składać do 2 lat. Formularz: reklamacje.ten-sklep.pl. Czas rozpatrzenia: 14 dni."
+  },
+  {
+  "id": "return_conditions",
+  "keywords": ["czy mogę zwrócić używany", "opakowanie"],
+  "content": "Produkt powinien być nieużywany i najlepiej w oryginalnym opakowaniu."
+ },
+ {
+  "id": "refund_time",
+  "keywords": ["kiedy dostanę zwrot pieniędzy"],
+  "content": "Zwrot środków następuje do 14 dni od przyjęcia zwrotu."
+ },
+ {
+  "id": "complaint_form",
+  "keywords": ["formularz reklamacji", "gdzie zgłosić reklamację"],
+  "content": "Reklamację możesz zgłosić przez formularz: reklamacje.sklep.pl."
+ },
+ {
+  "id": "return_form",
+  "keywords": ["formularz zwrotu", "gdzie zrobić zwrot"],
+  "content": "Zwrot możesz zgłosić przez formularz: zwrot.sklep.pl."
+ },
+ {
+  "id": "complaint_photos",
+  "keywords": ["jak zrobić zdjęcia reklamacja", "jak udokumentować uszkodzenie"],
+  "content": "Do reklamacji warto dołączyć zdjęcia: całego produktu, miejsca uszkodzenia oraz opakowania (jeśli było uszkodzone). Zdjęcia powinny być wyraźne i dobrze oświetlone."
+ },
+ {
+  "id": "carrier_complaint",
+  "keywords": ["uszkodzona paczka kurier", "reklamacja u kuriera"],
+  "content": "Jeśli paczka została uszkodzona w transporcie, zgłoś szkodę bezpośrednio u przewoźnika. Warto zachować opakowanie i zrobić zdjęcia uszkodzeń."
+ },
+ {
+  "id": "return_vs_complaint",
+  "keywords": ["zwrot czy reklamacja", "różnica zwrot reklamacja"],
+  "content": "Zwrot dotyczy produktów bez wad (np. zmiana decyzji), a reklamacja produktów uszkodzonych lub wadliwych."
+},
+{
+  "id": "complaint_full_flow",
+  "keywords": ["jak zrobić reklamację"],
+  "content": "Aby złożyć reklamację: wypełnij formularz reklamacji, przygotuj zdjęcia produktu oraz opisz problem. Jeśli uszkodzenie powstało w transporcie, zgłoś je również u przewoźnika."
+}
+]
